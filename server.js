@@ -50,7 +50,7 @@ function start() {
       name: "firstchoice",
       type: "list",
       message: "Would you like to do?",
-      choices: ["View all employees", "View all employees by department", "View all employees by manager", "Add Employee", "Remove Employee", "Update Employee Role", "Update Employee Manager", "Exit"]
+      choices: ["View all employees", "View all employees by department", "View all employees by manager", "Add Employee", "Remove Employee", "Update Employee Role", "Exit"]
     })
     .then(function (answer) {
 
@@ -256,7 +256,7 @@ function addEmployee() {
                 // console.log(roleId)
                 connection.query(queryadd, [result.newfirstname, result.newlastname, roleId, managerId], function (err, res) {
                   if (err) throw err;
-                  console.log(`Added ${result.newfirstname} ${result.newlastname} as a ${result.rolechoice} with ${answer.manager} as their manager.`);
+                  console.log(chalk.green(`Added ${result.newfirstname} ${result.newlastname} as a ${result.rolechoice} with ${answer.manager} as their manager.`));
                   start();
                 })
               })
@@ -302,7 +302,7 @@ function removeEmployee() {
           if (err) throw err;
           connection.query(queryRemove, empId[0].id, function (err, res) {
             if (err) throw err;
-            console.log(`Removed ${answer.remove} from the database`);
+            console.log(chalk.red(`Removed ${answer.remove} from the database`));
             start();
 
           })
@@ -318,24 +318,24 @@ function removeEmployee() {
 }
 
 
-
+// Update employee role
 function updateRole() {
   var querynames = "select id, concat(first_name,' ', last_name) as name from employee";
   var queryRoles = "select id, title from role";
-  let names = [];
-  let roles = [];
-  connection.query(querynames, function (err, res) {
+  const names = [];
+  const roles = [];
+  connection.query(querynames, function (err, name) {
     if (err) throw err;
-    for (var i = 0; i < res.length; i++) {
-      names.push(res[i])
+    for (var i = 0; i < name.length; i++) {
+      names.push(name[i])
     }
-    console.log(names)
-    connection.query(queryRoles, function (err, res) {
+    // console.log(names)
+    connection.query(queryRoles, function (err, role) {
       if (err) throw err;
-      for (var i = 0; i < res.length; i++) {
-        roles.push(res[i])
+      for (var i = 0; i < role.length; i++) {
+        roles.push(role[i].title)
       }
-      console.log(roles)
+      // console.log(roles)
     })
 
     inquirer.prompt([
@@ -346,17 +346,32 @@ function updateRole() {
         choices: names
       },
       {
-        name: "confirm",
+        name: "rolechoice",
         type: "list",
-        message: "Are you sure?",
+        message: "Select new role",
         choices: roles
       }
 
-    ])
+    ]).then(function (answer) {let names = answer.namechoice.split(" ")
+    var queryroleId = "select id from role where title = ?";
+    var queryNameId = "select employee.id from employee where first_name = ? and last_name = ?";
+    var queryUpdate = "update employee set role_id = ? where id = ?"
 
-
-
-
+    connection.query(queryNameId, [names[0], names[1]], function (err, nameId) {
+      if (err) throw err;
+      nameId = nameId[0].id;
+      connection.query(queryroleId, answer.rolechoice, function (err, res) {
+        if (err) throw err;
+        roleId = res[0].id;
+        // console.log("role ID")
+        // console.log(roleId)
+        connection.query(queryUpdate, [roleId, nameId], function (err, res) {
+          if (err) throw err;
+          console.log(chalk.green(`Updated ${answer.namechoice}'s role to ${answer.rolechoice}`));
+          start();
+        })
+      })
+    })
 
   })
-}
+})}
